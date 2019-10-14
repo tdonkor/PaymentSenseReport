@@ -108,14 +108,27 @@ namespace PaymentSenseReport
                 return _entries.FirstOrDefault(_ => _.Key == "TID")?.Value ?? "22163665";
             }
         }
-        public string Currency
+        public string MediaType
         {
             get
             {
-                return _entries.FirstOrDefault(_ => _.Key == "CURRENCY")?.Value ?? "GBP";
+                return _entries.FirstOrDefault(_ => _.Key == "MEDIATYPE")?.Value ?? "application/connect.v2+json";
             }
         }
-
+        public string InstallerId
+        {
+            get
+            {
+                return _entries.FirstOrDefault(_ => _.Key == "INSTALLERID")?.Value ?? "ST185L09";
+            }
+        }
+        public string SoftwareHouseId
+        {
+            get
+            {
+                return _entries.FirstOrDefault(_ => _.Key == "SOFTWAREHOUSEID")?.Value ?? "ST185L09";
+            }
+        }
 
         public static AppConfiguration Instance { get; }
     }

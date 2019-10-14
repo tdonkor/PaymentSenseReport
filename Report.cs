@@ -9,7 +9,7 @@ using System.Configuration;
 using RestSharp.Authenticators;
 using System.IO;
 using System.Reflection;
-
+using Acrelec.Library.Logger;
 namespace PaymentSenseReport
 {
 
@@ -20,12 +20,15 @@ namespace PaymentSenseReport
         private string requestId;
         private string tid;
         private string url;
-        private string currency;
+        private string installerId;
+        private string softwareHouseId;
+        private string mediaType;
 
         private static readonly string ticketPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Report");
 
 
         AppConfiguration configFile;
+    
 
         /// <summary>
         /// Constructor initialise settings
@@ -37,7 +40,9 @@ namespace PaymentSenseReport
             password = configFile.Password;
             url = configFile.UserAccountUrl;
             tid = configFile.Tid;
-            currency = configFile.Currency;
+            installerId = configFile.InstallerId;
+            softwareHouseId = configFile.SoftwareHouseId;
+            mediaType = configFile.MediaType;
         }
 
 
@@ -47,16 +52,14 @@ namespace PaymentSenseReport
         /// </summary>
         public IRestResponse EndOfDayPostRequest()
         {
-
+            
             Console.WriteLine("Starting Report: ");
             var config = AppConfiguration.Instance;
 
             RestClient client = Authenticate(url + "/pac/terminals/" + tid + "/reports");
             var request = new RestRequest(Method.POST);
-            request.AddHeader("Content-Type", "application/json");
-            request.AddHeader("Accept", "*/*");
-            request.AddHeader("Connection", "keep-alive");
-            request.AddParameter("undefined", "{\r\n  \"reportType\": \"END_OF_DAY\"\r\n}", ParameterType.RequestBody);
+            request = RequestParams(request);
+            request.AddParameter("EndOfDay", "{\r\n  \"reportType\": \"END_OF_DAY\"\r\n}", ParameterType.RequestBody);
             IRestResponse response = client.Execute(request);
 
             //check reponse isSuccessful
@@ -73,24 +76,21 @@ namespace PaymentSenseReport
                     Thread.Sleep(1000);
                     response = GetEndOfDayData(requestId, url);
 
-                    Console.WriteLine(response.Content + "\n\n");
+                   // Console.WriteLine(response.Content + "\n\n");
                    
 
                     if (response.Content.Contains("REPORT COMPLETE"))
                     {
-                        Console.WriteLine("\nReport Finished");
+                        Console.WriteLine("\nReport Complete\n");
                         break;
                     }
                 }
 
-                //deserialise response
-                RootObject reportDetails = JsonConvert.DeserializeObject<RootObject>(response.Content);
-
-
             }
 
+            //Save json report details.
             var outputDirectory = Path.GetFullPath(config.OutPath);
-            var outputPath = Path.Combine(outputDirectory, $"{DateTime.Now:yyyyMMddHHmmss}_Report.txt");
+            var outputPath = Path.Combine(outputDirectory, $"{DateTime.Now:yyyyMMddHHmmss}_End_Of_Day_Report.json");
 
             if (!Directory.Exists(outputDirectory))
             {
@@ -98,27 +98,47 @@ namespace PaymentSenseReport
             }
 
             //Write the new ticket
-            File.WriteAllText(outputPath, response.Content.ToString());
+            File.WriteAllText(outputPath, response.Content);
+            Console.WriteLine($"\nEnd of Day Report is at: {outputPath}\n");
             return response;
         }
 
-
-
-
-
+        /// <summary>
+        /// Get end of day request ID
+        /// </summary>
+        /// <param name="requestId"></param>
+        /// <param name="url"></param>
+        /// <returns></returns>
         public IRestResponse GetEndOfDayData(string requestId, string url)
         {
 
             RestClient client = Authenticate(url + "/pac/terminals/" + tid + "/reports/" + requestId);
             var request = new RestRequest(Method.GET);
-            request.AddHeader("Content-Type", "application/json");
-            request.AddHeader("Accept", "*/*");
-            request.AddHeader("Connection", "keep-alive");
+            request = RequestParams(request);
 
             IRestResponse response = client.Execute(request);
 
             return response;
         }
+
+
+        /// <summary>
+        /// The Request Parameters for the REST API calls 
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        private RestRequest RequestParams(RestRequest request)
+        {
+            request.AddHeader("Content-Type", "application/json");
+            request.AddHeader("Accept", mediaType);
+            request.AddHeader("Software-House-Id", softwareHouseId);
+            request.AddHeader("Installer-Id", installerId);
+            request.AddHeader("Connection", "keep-alive");
+
+            return request;
+        }
+
+      
 
 
         private RestClient Authenticate(string url)
