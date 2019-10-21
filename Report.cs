@@ -23,11 +23,12 @@ namespace PaymentSenseReport
         private string installerId;
         private string softwareHouseId;
         private string mediaType;
+        private string reportPath;
+        
 
-        private static readonly string ticketPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Report");
-
-
-        AppConfiguration configFile;
+       // private static readonly string ReportPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Report");
+        
+       // AppConfiguration configFile;
     
 
         /// <summary>
@@ -35,14 +36,28 @@ namespace PaymentSenseReport
         /// </summary>
         public Report()
         {
-            configFile = AppConfiguration.Instance;
-            username = configFile.UserName;
-            password = configFile.Password;
-            url = configFile.UserAccountUrl;
-            tid = configFile.Tid;
-            installerId = configFile.InstallerId;
-            softwareHouseId = configFile.SoftwareHouseId;
-            mediaType = configFile.MediaType;
+
+
+            //// configFile = AppConfiguration.Instance;
+            // username = configFile.UserName;
+            // password = configFile.Password;
+            // url = configFile.UserAccountUrl;
+            // tid = configFile.Tid;
+            // installerId = configFile.InstallerId;
+            // softwareHouseId = configFile.SoftwareHouseId;
+            // mediaType = configFile.MediaType;
+            // reportPath = configFile.ReportPath;
+            // iniPath = configFile.IniPath;
+
+             username = ConfigurationManager.AppSettings["username"];
+             password = ConfigurationManager.AppSettings["password"];
+             url = ConfigurationManager.AppSettings["url"];
+             tid = ConfigurationManager.AppSettings["tid"];
+             installerId = ConfigurationManager.AppSettings["installerId"];
+             softwareHouseId = ConfigurationManager.AppSettings["softwareHouseId"];
+             mediaType = ConfigurationManager.AppSettings["mediaType"];
+             reportPath = ConfigurationManager.AppSettings["reportPath"];
+
         }
 
 
@@ -52,55 +67,77 @@ namespace PaymentSenseReport
         /// </summary>
         public IRestResponse EndOfDayPostRequest()
         {
-            
-            Console.WriteLine("Starting Report: ");
-            var config = AppConfiguration.Instance;
 
-            RestClient client = Authenticate(url + "/pac/terminals/" + tid + "/reports");
-            var request = new RestRequest(Method.POST);
-            request = RequestParams(request);
-            request.AddParameter("EndOfDay", "{\r\n  \"reportType\": \"END_OF_DAY\"\r\n}", ParameterType.RequestBody);
-            IRestResponse response = client.Execute(request);
-
-            //check reponse isSuccessful
-            if (response.IsSuccessful)
+            try
             {
-                //deserialise response
-                ReportResp reportResponse = JsonConvert.DeserializeObject<ReportResp>(response.Content);
-                requestId = reportResponse.RequestId;
 
-                //poll for result every 1 seconds block until finish
-                //
-                while (true)
+
+                //if (File.Exists(reportPath))
+                //{
+                //    File.Delete(reportPath);
+                //}
+
+                Log.Info("Starting Report: ");
+               // var config = AppConfiguration.Instance;
+
+                RestClient client = Authenticate(url + "/pac/terminals/" + tid + "/reports");
+                var request = new RestRequest(Method.POST);
+                request = RequestParams(request);
+                request.AddParameter("EndOfDay", "{\r\n  \"reportType\": \"END_OF_DAY\"\r\n}", ParameterType.RequestBody);
+                IRestResponse response = client.Execute(request);
+
+                //check reponse isSuccessful
+                if (response.IsSuccessful)
                 {
-                    Thread.Sleep(1000);
-                    response = GetEndOfDayData(requestId, url);
+                    //deserialise response
+                    ReportResp reportResponse = JsonConvert.DeserializeObject<ReportResp>(response.Content);
+                    requestId = reportResponse.RequestId;
 
-                   // Console.WriteLine(response.Content + "\n\n");
-                   
-
-                    if (response.Content.Contains("REPORT COMPLETE"))
+                    //poll for result every 1 seconds block until finish
+                    //
+                    while (true)
                     {
-                        Console.WriteLine("\nReport Complete\n");
-                        break;
+                        Thread.Sleep(1000);
+                        response = GetEndOfDayData(requestId, url);
+
+                        if (response.Content.Contains("REPORT COMPLETE"))
+                        {
+                            Log.Info("\nReport Complete....\n");
+                            break;
+                        }
                     }
+
                 }
 
+                //Save json report details.
+
+                var outputDirectory = reportPath;
+                  
+                    var outputPath = Path.Combine(outputDirectory, $"{DateTime.Now:yyyyMMddHHmmss}_End_Of_Day_Report.json");
+
+
+                if (!Directory.Exists(outputDirectory))
+                {
+                    Directory.CreateDirectory(outputDirectory);
+                }
+
+                    //Write the new ticket
+                    File.WriteAllText(outputPath, response.Content);
+
+                Log.Info($"\nEnd of Day Report complete  is at: {outputPath}\n");
+
+                return response;
+
+
             }
-
-            //Save json report details.
-            var outputDirectory = Path.GetFullPath(config.OutPath);
-            var outputPath = Path.Combine(outputDirectory, $"{DateTime.Now:yyyyMMddHHmmss}_End_Of_Day_Report.json");
-
-            if (!Directory.Exists(outputDirectory))
+            catch (Exception ex)
             {
-                Directory.CreateDirectory(outputDirectory);
-            }
+                Log.Error(ex);
 
-            //Write the new ticket
-            File.WriteAllText(outputPath, response.Content);
-            Console.WriteLine($"\nEnd of Day Report is at: {outputPath}\n");
-            return response;
+                return null;
+             
+            }
+           
         }
 
         /// <summary>

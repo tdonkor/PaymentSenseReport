@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Acrelec.Library.Logger;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -41,11 +42,13 @@ namespace PaymentSenseReport
             if (!File.Exists(path))
             {
                 Console.WriteLine($"Configuration file {path} not found. Using default values.");
+                Log.Info($"Configuration file {path} not found. Using default values.");
                 return;
             }
             else
             {
                 Console.WriteLine($"Configuration file {path} found\n.Using Config values....");
+                Log.Info($"Configuration file {path} found\n.Using Config values....");
             }
 
             var section = string.Empty;
@@ -71,11 +74,19 @@ namespace PaymentSenseReport
             }
         }
 
-        public string OutPath
+        public string ReportPath
         {
             get
             {
-                return _entries.FirstOrDefault(_ => _.Key == "OUT_PATH")?.Value ?? @"out\";
+                return _entries.FirstOrDefault(_ => _.Key == "REPORT_PATH")?.Value ?? @"C:\acrelec\PaymentSenseEODReports\EOD_Reports\";
+            }
+        }
+
+        public string IniPath
+        {
+            get
+            {
+                return _entries.FirstOrDefault(_ => _.Key == "INIT_PATH")?.Value ?? @"C:\acrelec\PaymentSenseEODReports\EO";
             }
         }
 
@@ -83,7 +94,7 @@ namespace PaymentSenseReport
         {
             get
             {
-                return _entries.FirstOrDefault(_ => _.Key == "USERNAME")?.Value ?? "acrelec";
+                return _entries.FirstOrDefault(_ => _.Key == "USERNAME")?.Value ?? "Acrelec";
             }
         }
         public string Password

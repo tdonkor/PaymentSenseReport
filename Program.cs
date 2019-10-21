@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
+using Acrelec.Library.Logger;
 
 namespace PaymentSenseReport
 {
@@ -11,12 +8,10 @@ namespace PaymentSenseReport
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Running End of Day Report.\n");
+            Console.WriteLine("Starting Report. ");
             Report report = new Report();
             report.EndOfDayPostRequest();
-
-            Console.WriteLine("Report finished.\nCheck reports folder for report.");
-            Thread.Sleep(2000);
+            Console.WriteLine("Report finished. ");
 
         }
     }
