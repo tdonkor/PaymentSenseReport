@@ -1,15 +1,16 @@
 ﻿using Newtonsoft.Json;
 using RestSharp;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using Acrelec.Mockingbird.Interfaces.Peripherals;
 using System.Threading;
 using System.Configuration;
 using RestSharp.Authenticators;
 using System.IO;
-using System.Reflection;
+
 using Acrelec.Library.Logger;
+using System.Reflection;
+using System.Text;
+
 namespace PaymentSenseReport
 {
 
@@ -24,31 +25,22 @@ namespace PaymentSenseReport
         private string softwareHouseId;
         private string mediaType;
         private string reportPath;
-        
+        private string logfilePath;
+        private StringBuilder logStr;
 
-       // private static readonly string ReportPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Report");
-        
-       // AppConfiguration configFile;
-    
+
+        /// <summary>
+        /// Object in charge of log saving
+        /// </summary>
+
+        // AppConfiguration configFile;
+
 
         /// <summary>
         /// Constructor initialise settings
         /// </summary>
         public Report()
         {
-
-
-            //// configFile = AppConfiguration.Instance;
-            // username = configFile.UserName;
-            // password = configFile.Password;
-            // url = configFile.UserAccountUrl;
-            // tid = configFile.Tid;
-            // installerId = configFile.InstallerId;
-            // softwareHouseId = configFile.SoftwareHouseId;
-            // mediaType = configFile.MediaType;
-            // reportPath = configFile.ReportPath;
-            // iniPath = configFile.IniPath;
-
              username = ConfigurationManager.AppSettings["username"];
              password = ConfigurationManager.AppSettings["password"];
              url = ConfigurationManager.AppSettings["url"];
@@ -57,9 +49,9 @@ namespace PaymentSenseReport
              softwareHouseId = ConfigurationManager.AppSettings["softwareHouseId"];
              mediaType = ConfigurationManager.AppSettings["mediaType"];
              reportPath = ConfigurationManager.AppSettings["reportPath"];
-
+             logfilePath = ConfigurationManager.AppSettings["logPath"];
+             logStr = new StringBuilder();
         }
-
 
         /// <summary>
         /// Start the report 
@@ -71,14 +63,8 @@ namespace PaymentSenseReport
             try
             {
 
-
-                //if (File.Exists(reportPath))
-                //{
-                //    File.Delete(reportPath);
-                //}
-
-                Log.Info("Starting Report: ");
-               // var config = AppConfiguration.Instance;
+                logStr.Append("Log Date: " + DateTime.Now + "\n");
+                logStr.Append("\nStarting EOD Report\n");
 
                 RestClient client = Authenticate(url + "/pac/terminals/" + tid + "/reports");
                 var request = new RestRequest(Method.POST);
@@ -102,29 +88,38 @@ namespace PaymentSenseReport
 
                         if (response.Content.Contains("REPORT COMPLETE"))
                         {
-                            Log.Info("\nReport Complete....\n");
+                            logStr.Append("\nEOD Report Complete....\n");
                             break;
                         }
                     }
 
                 }
 
-                //Save json report details.
+                //Save json report and Log files details.
 
                 var outputDirectory = reportPath;
-                  
-                    var outputPath = Path.Combine(outputDirectory, $"{DateTime.Now:yyyyMMddHHmmss}_End_Of_Day_Report.json");
-
+                var outputPath = Path.Combine(outputDirectory, $"{DateTime.Now:yyyyMMddHHmmss}_End_Of_Day_Report.json");
 
                 if (!Directory.Exists(outputDirectory))
                 {
                     Directory.CreateDirectory(outputDirectory);
                 }
 
-                    //Write the new ticket
+                    //Write the new report
                     File.WriteAllText(outputPath, response.Content);
 
-                Log.Info($"\nEnd of Day Report complete  is at: {outputPath}\n");
+                logStr.Append($"\nEnd of Day Report complete  is at: {logfilePath}\n");
+
+                var logDirectory = logfilePath;
+                var logPath = Path.Combine(logfilePath, $"{DateTime.Now:yyyyMMddHHmmss}_End_Of_Day_Report.log");
+
+                if (!Directory.Exists(logDirectory))
+                {
+                    Directory.CreateDirectory(logDirectory);
+                }
+
+                //Write the new log
+                File.WriteAllText(logPath, logStr.ToString());
 
                 return response;
 
@@ -132,7 +127,10 @@ namespace PaymentSenseReport
             }
             catch (Exception ex)
             {
-                Log.Error(ex);
+                logStr.Append("Error: " + ex.ToString());
+
+                //Write the new log
+                File.WriteAllText(logfilePath, logStr.ToString());
 
                 return null;
              

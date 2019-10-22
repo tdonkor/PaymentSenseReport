@@ -1,18 +1,19 @@
 ﻿using System;
-using System.Threading;
-using Acrelec.Library.Logger;
+using Acrelec.Mockingbird.Interfaces.Peripherals;
 
 namespace PaymentSenseReport
 {
     public class Program
     {
+      
+
+
         static void Main(string[] args)
         {
-            Console.WriteLine("Starting Report. ");
+            Console.WriteLine("Starting EOD Report. ");
             Report report = new Report();
             report.EndOfDayPostRequest();
-            Console.WriteLine("Report finished. ");
-
+            Console.WriteLine("EOD Report finished. ");
         }
     }
 }

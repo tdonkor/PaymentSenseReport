@@ -44,6 +44,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Acrelec.MockingBird.Core\Acrelec.Library.LogReport.dll</HintPath>
     </Reference>
+    <Reference Include="Mockingbird.Interfaces.Peripherals, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\pay_uk_paymentsense_payment_driver_1.0.0.-source\paymentsense_payment_driver\src\Acrelec.MockingBird.Core\Mockingbird.Interfaces.Peripherals.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>packages\Newtonsoft.Json.12.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -69,9 +73,10 @@
     <Compile Include="Report.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config" />
-    <None Include="PaymentSenseReport.ini" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />
